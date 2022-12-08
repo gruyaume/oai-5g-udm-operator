@@ -1,0 +1,32 @@
+name: oai-5g-udm
+
+summary: OpenAirInterface 5G Core Network udm
+
+description: |
+  OPENAIR-CN-5G is an implementation of the 3GPP specifications for the 5G Core Network. This 
+  charms deploys the udm component of the 5G Core Network.
+
+containers:
+  udm:
+    resource: udm-image
+    mounts:
+      - storage: config
+        location: /openair-udm/etc
+
+storage:
+  config:
+    type: filesystem
+    description: udm Config directory
+    minimum-size: 1G
+
+resources:
+  udm-image:
+    type: oci-image
+    description: OCI image for udm
+    upstream-source: docker.io/oaisoftwarealliance/oai-udm:v1.4.0
+
+requires:
+  fiveg-nrf:
+    interface: fiveg-nrf
+  database:
+    interface: mysql_client
