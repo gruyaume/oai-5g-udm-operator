@@ -140,7 +140,7 @@ class Oai5GUDMOperatorCharm(CharmBase):
 
     @property
     def _config_udm_name(self) -> str:
-        return "oai-udm"
+        return "OAI_UDM"
 
     @property
     def _config_use_fqdn_dns(self) -> str:
