@@ -8,6 +8,7 @@
 import logging
 
 from charms.oai_5g_nrf.v0.fiveg_nrf import FiveGNRFRequires  # type: ignore[import]
+from charms.oai_5g_udr.v0.fiveg_udr import FiveGUDRRequires  # type: ignore[import]
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
     KubernetesServicePatch,
     ServicePort,
@@ -49,8 +50,10 @@ class Oai5GUDMOperatorCharm(CharmBase):
             ],
         )
         self.nrf_requires = FiveGNRFRequires(self, "fiveg-nrf")
+        self.udr_requires = FiveGUDRRequires(self, "fiveg-udr")
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.fiveg_nrf_relation_changed, self._on_config_changed)
+        self.framework.observe(self.on.fiveg_udr_relation_changed, self._on_config_changed)
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Triggered on any change in configuration.
@@ -68,10 +71,17 @@ class Oai5GUDMOperatorCharm(CharmBase):
         if not self._nrf_relation_created:
             self.unit.status = BlockedStatus("Waiting for relation to NRF to be created")
             return
+        if not self._udr_relation_created:
+            self.unit.status = BlockedStatus("Waiting for relation to UDR to be created")
+            return
         if not self.nrf_requires.nrf_ipv4_address_available:
             self.unit.status = WaitingStatus(
                 "Waiting for NRF IPv4 address to be available in relation data"
             )
+            return
+        if not self.udr_requires.udr_ipv4_address_available:
+            print("ccc")
+            self.unit.status = WaitingStatus("Waiting for UDR IPv4 address to be available")
             return
         self._push_config()
         self._update_pebble_layer()
@@ -91,6 +101,10 @@ class Oai5GUDMOperatorCharm(CharmBase):
     def _nrf_relation_created(self) -> bool:
         return self._relation_created("fiveg-nrf")
 
+    @property
+    def _udr_relation_created(self) -> bool:
+        return self._relation_created("fiveg-udr")
+
     def _relation_created(self, relation_name: str) -> bool:
         if not self.model.get_relation(relation_name):
             return False
@@ -108,10 +122,10 @@ class Oai5GUDMOperatorCharm(CharmBase):
             sbi_interface_api_version=self._config_sbi_interface_api_version,
             sbi_interface_http2_port=self._config_sbi_interface_http2_port,
             use_fqdn_dns=self._config_use_fqdn_dns,
-            udr_ipv4_address=self._config_udr_ipv4_address,
-            udr_port=self._config_udr_port,
-            udr_api_version=self._config_udr_api_version,
-            udr_fqdn=self._config_udr_fqdn,
+            udr_ipv4_address=self.udr_requires.udr_ipv4_address,
+            udr_port=self.udr_requires.udr_port,
+            udr_api_version=self.udr_requires.udr_api_version,
+            udr_fqdn=self.udr_requires.udr_fqdn,
             nrf_ipv4_address=self.nrf_requires.nrf_ipv4_address,
             nrf_port=self.nrf_requires.nrf_port,
             nrf_api_version=self.nrf_requires.nrf_api_version,
@@ -169,22 +183,6 @@ class Oai5GUDMOperatorCharm(CharmBase):
     @property
     def _config_sbi_interface_api_version(self) -> str:
         return "v1"
-
-    @property
-    def _config_udr_ipv4_address(self) -> str:
-        return "127.0.0.1"
-
-    @property
-    def _config_udr_port(self) -> str:
-        return "80"
-
-    @property
-    def _config_udr_api_version(self) -> str:
-        return "v1"
-
-    @property
-    def _config_udr_fqdn(self) -> str:
-        return "oai-udr-svc"
 
     @property
     def _pebble_layer(self) -> dict:
