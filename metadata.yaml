@@ -30,8 +30,6 @@ requires:
     interface: fiveg-nrf
   fiveg-udr:
     interface: fiveg-udr
-  database:
-    interface: mysql_client
 
 provides:
   fiveg-udm:
