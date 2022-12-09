@@ -24,7 +24,6 @@ class TestCharm(unittest.TestCase):
         self.harness.begin()
 
     def _create_nrf_relation_with_valid_data(self):
-        self.harness.set_can_connect(container="udm", val=True)
         relation_id = self.harness.add_relation("fiveg-nrf", "nrf")
         self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf/0")
 
@@ -43,6 +42,25 @@ class TestCharm(unittest.TestCase):
         )
         return nrf_ipv4_address, nrf_port, nrf_api_version, nrf_fqdn
 
+    def _create_udr_relation_with_valid_data(self):
+        relation_id = self.harness.add_relation("fiveg-udr", "udr")
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="udr/0")
+
+        udr_ipv4_address = "4.5.6.7"
+        udr_port = "82"
+        udr_api_version = "v1"
+        udr_fqdn = "udr.example.com"
+        key_values = {
+            "udr_ipv4_address": udr_ipv4_address,
+            "udr_port": udr_port,
+            "udr_fqdn": udr_fqdn,
+            "udr_api_version": udr_api_version,
+        }
+        self.harness.update_relation_data(
+            relation_id=relation_id, app_or_unit="udr", key_values=key_values
+        )
+        return udr_ipv4_address, udr_port, udr_api_version, udr_fqdn
+
     @patch("ops.model.Container.push")
     def test_given_nrf_relation_contains_nrf_info_when_nrf_relation_joined_then_config_file_is_pushed(  # noqa: E501
         self, mock_push
@@ -54,6 +72,15 @@ class TestCharm(unittest.TestCase):
             nrf_api_version,
             nrf_fqdn,
         ) = self._create_nrf_relation_with_valid_data()
+
+        (
+            udr_ipv4_address,
+            udr_port,
+            udr_api_version,
+            udr_fqdn,
+        ) = self._create_udr_relation_with_valid_data()
+
+        self.harness.update_config(key_values={"sbiIfName": "eth0"})
 
         mock_push.assert_called_with(
             path="/openair-udm/etc/udm.conf",
@@ -82,10 +109,10 @@ class TestCharm(unittest.TestCase):
             "  }  \n"
             "    \n"
             "  UDR:{\n"
-            '    IPV4_ADDRESS   = "127.0.0.1";   # YOUR NETWORK CONFIG HERE\n'
-            "    PORT           = 80;           # YOUR NETWORK CONFIG HERE (default: 80)\n"
-            '    API_VERSION    = "v1";   # YOUR API VERSION FOR UDR CONFIG HERE\n'
-            '    FQDN           = "oai-udr-svc"          # YOUR UDR FQDN CONFIG HERE\n'
+            f'    IPV4_ADDRESS   = "{ udr_ipv4_address }";   # YOUR NETWORK CONFIG HERE\n'
+            f"    PORT           = { udr_port };           # YOUR NETWORK CONFIG HERE (default: 80)\n"  # noqa: E501, W505
+            f'    API_VERSION    = "{ udr_api_version }";   # YOUR API VERSION FOR UDR CONFIG HERE\n'  # noqa: E501, W505
+            f'    FQDN           = "{ udr_fqdn }"          # YOUR UDR FQDN CONFIG HERE\n'
             "  };\n"
             "  \n"
             "  NRF :\n"
@@ -102,7 +129,9 @@ class TestCharm(unittest.TestCase):
     def test_given_nrf_and_db_relation_are_set_when_config_changed_then_pebble_plan_is_created(  # noqa: E501
         self, _
     ):
+        self.harness.set_can_connect(container="udm", val=True)
         self._create_nrf_relation_with_valid_data()
+        self._create_udr_relation_with_valid_data()
 
         self.harness.update_config({"sbiIfName": "eth0"})
 

@@ -28,5 +28,7 @@ resources:
 requires:
   fiveg-nrf:
     interface: fiveg-nrf
+  fiveg-udr:
+    interface: fiveg-udr
   database:
     interface: mysql_client
