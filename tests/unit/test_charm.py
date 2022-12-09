@@ -62,14 +62,14 @@ class TestCharm(unittest.TestCase):
             "{\n"
             "  INSTANCE_ID = 0;\n"
             '  PID_DIRECTORY = "/var/run";\n\n'
-            '  UDM_NAME = "oai-udm";\n\n'
+            '  UDM_NAME = "OAI_UDM";\n\n'
             "  INTERFACES:{\n"
             "    # UDM binded interface for SBI interface (e.g., communication with UDR, AUSF)\n"  # noqa: E501, W505
-            '    SBI:{\n        INTERFACE_NAME = "eth0";       # YOUR NETWORK CONFIG HERE\n'
+            "    SBI:{\n"
+            '        INTERFACE_NAME = "eth0";       # YOUR NETWORK CONFIG HERE\n'
             '        IPV4_ADDRESS   = "read";\n'
             "        PORT           = 80;            # YOUR NETWORK CONFIG HERE (default: 80)\n"  # noqa: E501, W505
-            "        PPID           = 60;\n"
-            '        API_VERSION    = "v1";\n'
+            '        PPID           = 60;\n        API_VERSION    = "v1";\n'
             "        HTTP2_PORT     = 9090;     # YOUR NETWORK CONFIG HERE\n"
             "    };\n"
             "  };\n\n"
@@ -93,8 +93,9 @@ class TestCharm(unittest.TestCase):
             f'    IPV4_ADDRESS = "{ nrf_ipv4_address }";  # YOUR NRF CONFIG HERE\n'
             f"    PORT         = { nrf_port };            # YOUR NRF CONFIG HERE (default: 80)\n"  # noqa: E501, W505
             f'    API_VERSION  = "{ nrf_api_version }";   # YOUR NRF API VERSION HERE\n'
-            f'    FQDN         = "{nrf_fqdn}";          # YOUR NRF FQDN HERE\n'
-            "  };",
+            f'    FQDN         = "{ nrf_fqdn }";          # YOUR NRF FQDN HERE\n'
+            "  };\n"
+            "};",
         )
 
     @patch("ops.model.Container.push")
