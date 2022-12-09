@@ -8,6 +8,7 @@
 import logging
 
 from charms.oai_5g_nrf.v0.fiveg_nrf import FiveGNRFRequires  # type: ignore[import]
+from charms.oai_5g_udm.v0.oai_5g_udm import FiveGUDMProvides  # type: ignore[import]
 from charms.oai_5g_udr.v0.fiveg_udr import FiveGUDRRequires  # type: ignore[import]
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
     KubernetesServicePatch,
@@ -51,9 +52,29 @@ class Oai5GUDMOperatorCharm(CharmBase):
         )
         self.nrf_requires = FiveGNRFRequires(self, "fiveg-nrf")
         self.udr_requires = FiveGUDRRequires(self, "fiveg-udr")
+        self.udm_provides = FiveGUDMProvides(self, "fiveg-udm")
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.fiveg_nrf_relation_changed, self._on_config_changed)
         self.framework.observe(self.on.fiveg_udr_relation_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on.fiveg_udm_relation_joined, self._on_fiveg_udm_relation_joined
+        )
+
+    def _on_fiveg_udm_relation_joined(self, event) -> None:
+        """Triggered when a relation is joined.
+
+        Args:
+            event: Relation Joined Event
+        """
+        if not self.unit.is_leader():
+            return
+        self.udm_provides.set_udm_information(
+            udm_ipv4_address="127.0.0.1",
+            udm_fqdn=f"{self.model.app.name}.{self.model.name}.svc.cluster.local",
+            udm_port=self._config_sbi_interface_port,
+            udm_api_version=self._config_sbi_interface_api_version,
+            relation_id=event.relation.id,
+        )
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Triggered on any change in configuration.
@@ -80,7 +101,6 @@ class Oai5GUDMOperatorCharm(CharmBase):
             )
             return
         if not self.udr_requires.udr_ipv4_address_available:
-            print("ccc")
             self.unit.status = WaitingStatus("Waiting for UDR IPv4 address to be available")
             return
         self._push_config()
