@@ -53,6 +53,7 @@ class Oai5GUDMOperatorCharm(CharmBase):
         self.udr_requires = FiveGUDRRequires(self, "fiveg-udr")
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.fiveg_nrf_relation_changed, self._on_config_changed)
+        self.framework.observe(self.on.fiveg_udr_relation_changed, self._on_config_changed)
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Triggered on any change in configuration.
@@ -71,11 +72,9 @@ class Oai5GUDMOperatorCharm(CharmBase):
             self.unit.status = BlockedStatus("Waiting for relation to NRF to be created")
             return
         if not self._udr_relation_created:
-            print("aaa")
             self.unit.status = BlockedStatus("Waiting for relation to UDR to be created")
             return
         if not self.nrf_requires.nrf_ipv4_address_available:
-            print("bbb")
             self.unit.status = WaitingStatus(
                 "Waiting for NRF IPv4 address to be available in relation data"
             )
