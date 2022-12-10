@@ -31,7 +31,7 @@ class Oai5GUDMOperatorCharm(CharmBase):
     def __init__(self, *args):
         """Observes juju events."""
         super().__init__(*args)
-        self._container_name = "udm"
+        self._container_name = self._service_name = "udm"
         self._container = self.unit.get_container(self._container_name)
         self.service_patcher = KubernetesServicePatch(
             charm=self,
@@ -68,6 +68,10 @@ class Oai5GUDMOperatorCharm(CharmBase):
         """
         if not self.unit.is_leader():
             return
+        if not self._udm_service_started:
+            logger.info("UDM service not started yet, deferring event")
+            event.defer()
+            return
         self.udm_provides.set_udm_information(
             udm_ipv4_address="127.0.0.1",
             udm_fqdn=f"{self.model.app.name}.{self.model.name}.svc.cluster.local",
@@ -75,6 +79,14 @@ class Oai5GUDMOperatorCharm(CharmBase):
             udm_api_version=self._config_sbi_interface_api_version,
             relation_id=event.relation.id,
         )
+
+    @property
+    def _udm_service_started(self) -> bool:
+        if not self._container.can_connect():
+            return False
+        if not self._container.get_service(self._service_name).is_running():
+            return False
+        return True
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Triggered on any change in configuration.
@@ -211,7 +223,7 @@ class Oai5GUDMOperatorCharm(CharmBase):
             "summary": "udm layer",
             "description": "pebble config layer for udm",
             "services": {
-                "udm": {
+                self._service_name: {
                     "override": "replace",
                     "summary": "udm",
                     "command": f"/openair-udm/bin/oai_udm -c {BASE_CONFIG_PATH}/{CONFIG_FILE_NAME} -o",  # noqa: E501
