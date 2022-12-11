@@ -131,7 +131,7 @@ class Oai5GUDMOperatorCharm(CharmBase):
         """
         self._container.add_layer("udm", self._pebble_layer, combine=True)
         self._container.replan()
-        self.unit.status = ActiveStatus()
+        self._container.restart(self._service_name)
 
     @property
     def _nrf_relation_created(self) -> bool:
