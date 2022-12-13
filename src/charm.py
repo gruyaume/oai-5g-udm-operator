@@ -121,7 +121,17 @@ class Oai5GUDMOperatorCharm(CharmBase):
             return
         self._push_config()
         self._update_pebble_layer()
+        if self.unit.is_leader():
+            self._set_udm_information_for_all_relations()
         self.unit.status = ActiveStatus()
+
+    def _set_udm_information_for_all_relations(self):
+        self.udm_provides.set_udm_information_for_all_relations(
+            udm_ipv4_address="127.0.0.1",
+            udm_fqdn=f"{self.model.app.name}.{self.model.name}.svc.cluster.local",
+            udm_port=self._config_sbi_interface_port,
+            udm_api_version=self._config_sbi_interface_api_version,
+        )
 
     def _update_pebble_layer(self) -> None:
         """Updates pebble layer with new configuration.
